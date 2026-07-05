@@ -1,83 +1,43 @@
 # SpaceTimeFlowLISA
-**SpaceTimeFlowLISA** (Tao, Chen, and Thill, 2023) measures spatiotemporal local autocorrelation for panel flow data.
+**SpaceTimeFlowLISA**, or the space-time flow local indicator of spatial association, measures spatiotemporal autocorrelation of panel flow data. The method was proposed by Tao, Chen, and Thill (2023) as an extension of **FlowLISA** and **BiFlowLISA** for dynamic origin-destination flows.
 
 Run the codes of SpaceTimeFlowLISA:
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hengyuanL/SpaceTimeFlowLISA/blob/main/SpaceTimeFlowLISA_main.ipynb)
 
-Spatial flow data represent origin-destination interactions between geographic regions, such as commuting, migration, and exchanges of commodities, capital, energy, or information. These flows are often highly dynamic, but many existing flow analytical methods are cross-sectional. Space-Time Flow LISA extends Spatial Flow LISA to panel flow data by measuring localized spatiotemporal autocorrelation in a one-step analysis.
+Spatial flows represent meaningful interactions between geographic regions, such as migration, commuting, trade, information exchange, and other origin-destination movements. While FlowLISA measures spatial autocorrelation in cross-sectional flow data, SpaceTimeFlowLISA introduces temporal dependence so that local flow clusters and outliers can be detected in panel flow data.
 
-The key component is a space-time weight matrix for flow data that blends pairwise spatial and temporal connectivities. The method includes three versions of the matrix: contemporaneous, lagged, and hybrid. These options allow the local statistic to capture patterns that are spatially explicit, temporally dependent, or both.
+(PDF fig.1)
 
-The case study in Tao, Chen, and Thill (2023) uses U.S. interstate migration flows from 2005 to 2017. The method can identify dynamic local patterns in migration systems, including time-sensitive changes such as the outmigration from Louisiana associated with Hurricane Katrina in 2005.
+The core idea is to construct a space-time flow weight matrix. This matrix links one flow with other flows that are spatially neighboring, temporally neighboring, or both. Tao, Chen, and Thill (2023) define three space-time dependency structures: contemporaneous, lagged, and hybrid. The contemporaneous structure links flows within the same time period, the lagged structure links flows across adjacent time periods, and the hybrid structure combines spatial and temporal flow neighborhoods.
 
-The result interpretation is similar to other LISA methods. Significant local patterns include "HH" (high-high), "LL" (low-low), "HL" (high-low), and "LH" (low-high). Compared with the spatial-only Flow LISA, Space-Time Flow LISA is less impeded by the distance between flow origin and destination because it also uses temporal dependence in panel flow data.
+(PDF fig.2)
 
-The repository follows the same layout style as BiFlowLISA:
+(PDF fig.3)
 
-```
-core/    Space-Time Flow LISA and supporting algorithms
-input/   sample U.S. interstate migration panel flow data and state shapefile
-result/  output location for generated local statistics
-```
+(PDF fig.4)
 
-Before running Space-Time Flow LISA, prepare the origin and destination shapefiles:
+The result interpretation is similar to other LISA methods. There are four categories of significant local patterns, namely "HH" (high-high), "LL" (low-low), "HL" (high-low), and "LH" (low-high). The "HH" and "LL" local patterns indicate space-time flow clusters, where the focal flow and its neighboring flows have similar high or low values. The "HL" and "LH" local patterns indicate local outliers, where the focal flow differs from its surrounding space-time flow neighborhood.
 
-```python
-AREAS1 = clusterpy.importArcData("input/US_States")
-AREAS2 = clusterpy.importArcData("input/US_States")
-```
+For the synthetic experiment, Tao, Chen, and Thill (2023) used controlled flow data to evaluate whether SpaceTimeFlowLISA can identify designed spatiotemporal local autocorrelation patterns. The synthetic example shows how different weight matrices affect the detection of local clusters and outliers in panel flow settings.
 
-Use `core/AllYearDictionary_sample.py` to build the all-year flow dictionary used by the space-time statistic.
+(PDF fig.5)
 
-The main execution call is:
+For the empirical case study, the paper applies SpaceTimeFlowLISA to U.S. interstate migration flows from 2005 to 2017. The flows are standardized by origin population size and analyzed across time to reveal changing migration corridor patterns. Compared with spatial-only FlowLISA, SpaceTimeFlowLISA can detect patterns that are less spatially explicit but temporally dependent, including time-sensitive changes associated with events such as Hurricane Katrina.
 
-```python
-outputStr = execSpaceTimeFLOWLISA(
-    AREAS1,
-    AREAS2,
-    FlowValue,
-    FlowValue2,
-    Time1,
-    Time2,
-    Spatstat,
-    NeiLvl,
-    Allyeardic,
-)
-```
+(PDF fig.6)
 
-Parameters:
+(PDF fig.7)
 
-```
-AREAS1: origin areas
-AREAS2: destination areas
-FlowValue: OD pairs with non-zero values for the first year
-FlowValue2: OD pairs with non-zero values for the second year
-Time1: first year
-Time2: second year
-Spatstat: 1 = Moran's I; 2 = Getis G; 3 = Geary C; 5 = Multi-Geary C
-NeiLvl: 33 = contemporaneous; 494 = lagged; 55 = hybrid
-Allyeardic: dictionary of OD pairs with non-zero values across all years
-```
+The longer-period comparison highlights how the hybrid space-time flow weight matrix captures persistent and dynamic migration structures. The method identifies migration corridor havens, deserts, and outliers across years, showing that integrating spatial, temporal, and attributive associations in one local statistic can reveal distributional changes in flow phenomena.
 
-After executing the code, export the results to the `result/` folder:
+(PDF fig.8)
 
-```python
-outputFile = open("result/file_name.txt", "w")
-outputFile.write(outputStr)
-```
+(PDF fig.9)
 
 To cite:
 
-Tao, R., Chen, Y., & Thill, J. C. (2023). A space-time flow LISA approach for panel flow data. Computers, Environment and Urban Systems, 106, 102042. https://doi.org/10.1016/j.compenvurbsys.2023.102042
+Tao, R., Chen, Y., & Thill, J. C. (2023). A space-time flow LISA approach for panel flow data. Computers, Environment and Urban Systems, 106, 102042.
 
-```
-@article{tao2023spacetimeflowlisa,
-  author = {Tao, Ran and Chen, Yuzhou and Thill, Jean-Claude},
-  title = {A space-time flow LISA approach for panel flow data},
-  journal = {Computers, Environment and Urban Systems},
-  volume = {106},
-  pages = {102042},
-  year = {2023},
-  doi = {10.1016/j.compenvurbsys.2023.102042}
-}
-```
+Tao, R., & Thill, J. C. (2020). BiFlowLISA: Measuring spatial association for bivariate flow data. Computers, Environment and Urban Systems, 83, 101519.
+
+Tao, R., & Thill, J. C. (2016). Spatial cluster detection in spatial flow data. Geographical Analysis, 48(4), 355-372.

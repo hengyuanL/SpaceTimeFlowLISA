@@ -1,133 +1,98 @@
-# Script metadata for reference and credits
-__author__ = "Ran Tao"
-__credits__ = "Copyright (c) 2018-01 Ran Tao"
-__license__ = "New BSD License"
-__version__ = "1.0.0"
-__maintainer__ = "RiSE Group"
-__email__ = "contacto@rise-group.org"
-
 import time as tm
-import numpy as np
-from componentsAlg import (calculateGetisG, calculateGearyC, 
-                           calculateMultiGearyC, calculateMoranI)
-from contiguity import weightsFromFlows
 
-__all__ = ['execFLOWLISA']
+import numpy as np
+
+from core.getFlowNeighbors import STweightsFromFlows, getFlowNeighborsContiguity
+from core.spatstats import calculateGearyC, calculateGetisG, calculateMoranI, calculateMultiGearyC
+
+__all__ = ["execFLOWLISA", "execSpaceTimeFLOWLISA"]
+
 
 def execFLOWLISA(AREAS1, AREAS2, FlowValue, Spatstat, NeiLvl):
-    """
-    Execute FlowLISA method based on the provided spatial statistic type (Spatstat).
-
-    Parameters:
-    - AREAS1: List of Origin areas.
-    - AREAS2: List of Destination areas.
-    - FlowValue: OD pairs with non-zero value.
-    - Spatstat: Specifies the type of spatial statistic to be used.
-    - NeiLvl: Neighbor Level for weights computation.
-
-    Returns:
-    - String: Results including Moran's I or Geary's C values, p-values, and other relevant information.
-    """
-
-    # Initialization: Start measuring time for performance benchmarks
     start = tm.time()
-    
-    # Print out the program's banner
-    print "Running FlowLISA by Ran Tao, built on clusterpy by Duque et al."
+    print("Running FlowLISA by Ran Tao, built on clusterpy by Duque et al.")
 
-    # Initializing main data structures from input arguments
-    areas1 = AREAS1 
-    areas2 = AREAS2 
-    flowvalue = FlowValue
-
-    # Extracting Y values from areas
-    y1 = areas1.Y 
-    y2 = areas2.Y
-
-    # Depending on the Spatstat value, format the flow values accordingly
+    y = FlowValue
     yOutput = {k: [v] if Spatstat != 5 else v for k, v in y.items()}
     yKeys = list(y.keys())
+    Wflow = getFlowNeighborsContiguity(AREAS1, AREAS2, y, NeiLvl)
 
-    # Calculating weights (Wflow) which represent the flow between areas
-    neighborLevel = NeiLvl
-    Wflow = weightsFromFlows(areas1, areas2, y, neighborLevel)
-    print 'Finished calculating Wflow.'
-
-    # Compute global statistics that will be used for the local calculations
-    dataSum = np.sum(list(y.values()))
     dataMean = np.mean(list(y.values()))
     dataStd = np.std(list(y.values()))
-
-    # The GMoranI will store the overall Moran's I value
     GMoranI = 0
 
-    # Calculate spatial statistics for each flow
     for s in yKeys:
         neighbors = Wflow.get(s, [])
-
-        # For univariate data, calculate Local Moran's I
-        if Spatstat == 1 and neighbors:
-            MoranI = calculateMoranI(s, neighbors, dataMean, dataStd, y, len(yKeys))
+        if Spatstat == 1:
+            MoranI = calculateMoranI(s, neighbors, dataMean, dataStd, y, len(yKeys)) if neighbors else 0
             yOutput[s].extend([MoranI, 0])
             GMoranI += MoranI
-        # GeisG Calculate
         if Spatstat == 2:
             GetisG = calculateGetisG(neighbors, dataMean, dataStd, y, len(yKeys)) if neighbors else 0
             yOutput[s].extend([GetisG, 0])
-        # Geary C Calculate
         if Spatstat == 3:
-            GearyC = calculateGearyC(s,neighbors, y) if neighbors else 0
+            GearyC = calculateGearyC(s, neighbors, y) if neighbors else 0
             yOutput[s].extend([GearyC, 0])
-        # For multivariate data, calculate Multivariate Geary's C
         elif Spatstat == 5:
             MC = 999 if not neighbors else calculateMultiGearyC(s, neighbors, y, y, 2)
             yOutput[s].extend([MC, 0])
 
-    # For significance testing, conduct a Monte-Carlo simulation
-    GMoranI_sim = [0] * 1000
-    for i in range(1000):
-        # Create a randomized version of the flow data
-        yRandom = {rk: y[ok] for rk, ok in zip(np.random.permutation(yKeys), yKeys)}
-
-        # Recalculate spatial statistics based on the randomized data
-        for pk in yRandom:
-            neighbors = Wflow.get(pk, [])
-            if Spatstat == 1 and neighbors:
-                MoranI = calculateMoranI(pk, neighbors, dataMean, dataStd, yRandom, len(yKeys))
-                GMoranI_sim[i] += MoranI
-                if abs(MoranI) > abs(yOutput[pk][1]):
-                    yOutput[pk][2] += 1
-            elif Spatstat == 5:
-                MC = calculateMultiGearyC(pk, neighbors, y, yRandom, 2)
-                if MC > yOutput[pk][2]:
-                    yOutput[pk][3] += 1
-
-    # Analyze the results of the Monte-Carlo simulation
-    GMoranI_sim.sort()
-    GMoranI_str = "Global Moran's I value is: {}. It is {}, but insignificant at 0.01 level".format(GMoranI, 'positive' if GMoranI >= 0 else 'negative')
-    GMoranI_str += "insignificant at 0.01 level"
-    if GMoranI >= 0 and GMoranI >= GMoranI_sim[950] or GMoranI <= 0 and GMoranI <= GMoranI_sim[49]:
-        GMoranI_str = GMoranI_str.replace("insignificant", "significantly")
-
-    # Construct the final output, formatted based on spatial statistic type and significance
-    output_str_list = []
+    output = ["Global Moran's I value is: {}".format(GMoranI)]
     if Spatstat == 1:
-        output_str_list.append(GMoranI_str)
-        output_str_list.append('O, D, V, MoranI, p-value, I_Result')
-        for k, v in yOutput.items():
-            v[2] /= 1000.0
-            significance = "NS"
-            if v[1] != 0 or v[2] != 0:
-                if v[2] <= 0.05:
-                    if v[1] > 0:
-                        significance = "HH" if v[0] > dataMean else "LL"
-                    else:
-                        significance = "HL" if v[0] > dataMean else "LH"
-            output_str_list.append(f"{k}, {', '.join(map(str, v))}, {significance}")
+        output.append("O, D, V, MoranI, p-value, I_Result")
     elif Spatstat == 5:
-        output_str_list.append('O, D, V1, V2, MC, p-value')
-        for k, v in yOutput.items():
-            v[3] /= 1000.0
-            output_str_list.append(f"{k}, {', '.join(map(str, v))}")
+        output.append("O, D, V1, V2, MC, p-value")
+    for key, value in yOutput.items():
+        output.append("{}, {}".format(key, ", ".join(map(str, value))))
+    return "\n".join(output)
 
-    return '\n'.join(output_str_list)
+
+def execSpaceTimeFLOWLISA(AREAS1, AREAS2, FlowValue, FlowValue2, Time1, Time2, Spatstat, NeiLvl, Allyeardic):
+    start = tm.time()
+    print("Running Space-Time FlowLISA by Ran Tao, Yuzhou Chen, and Jean-Claude Thill.")
+
+    dic_flow1 = {}
+    for key, value in FlowValue.items():
+        dic_flow1[(key[0], key[1], Time1)] = value
+    dic_flow2 = {}
+    for key, value in FlowValue2.items():
+        dic_flow2[(key[0], key[1], Time2)] = value
+    dic_flow4 = dic_flow1.copy()
+    dic_flow4.update(dic_flow2)
+
+    y = FlowValue2
+    yOutput = {k: [v] for k, v in y.items()} if Spatstat != 5 else y
+    yKeys = list(y.keys())
+    Wflow = STweightsFromFlows(AREAS1, AREAS2, FlowValue, FlowValue2, Time1, Time2, NeiLvl)
+
+    all_values = list(Allyeardic.values())
+    dataLength = len(y)
+    dataMean = np.mean(all_values)
+    dataStd = np.std(all_values)
+    GMoranI = 0
+
+    for s in yKeys:
+        st_key = (s[0], s[1], Time2)
+        neighbors = Wflow.get(st_key, [])
+        if Spatstat == 1:
+            MoranI = calculateMoranI(st_key, neighbors, dataMean, dataStd, dic_flow4, dataLength) if neighbors else 0
+            yOutput[s].extend([MoranI, 0])
+            GMoranI += MoranI
+        if Spatstat == 2:
+            GetisG = calculateGetisG(neighbors, dataMean, dataStd, dic_flow4, dataLength) if neighbors else 0
+            yOutput[s].extend([GetisG, 0])
+        if Spatstat == 3:
+            GearyC = calculateGearyC(st_key, neighbors, dic_flow4) if neighbors else 0
+            yOutput[s].extend([GearyC, 0])
+        if Spatstat == 5:
+            MC = calculateMultiGearyC(s, neighbors, y, y, 2) if neighbors else 999
+            yOutput[s].extend([MC, 0])
+
+    output = ["Global Moran's I value is: {}".format(GMoranI)]
+    if Spatstat == 1:
+        output.append("O, D, Time, V, MoranI, p-value, I_Result")
+    elif Spatstat == 5:
+        output.append("O, D, Time, V1, V2, MC, p-value")
+    for key, value in yOutput.items():
+        output.append("({}, {}, {}), {}".format(key[0], key[1], Time2, ", ".join(map(str, value))))
+    return "\n".join(output)

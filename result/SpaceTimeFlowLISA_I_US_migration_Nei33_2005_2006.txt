@@ -1,0 +1,2 @@
+Global Moran's I value is:
+O, D, Time, V, MoranI, p-value, I_Result
