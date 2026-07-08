@@ -48,7 +48,6 @@ outputStr = execSpaceTimeFLOWLISA(AREAS1, AREAS2, F_dt1, F_dt2, 2005, 2006, 1, 5
         494 -> lagged
         55 -> hybrid
     9. Allyeardic: Dictionary of all-year panel flow values
-
     Returns:
     - A formatted output string containing results
 """
