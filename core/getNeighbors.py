@@ -1,7 +1,11 @@
-import numpy as np
-from collections import defaultdict
-from scipy.spatial import KDTree
-import shapefile
+﻿import numpy as np
+
+try:
+    from scipy.spatial import KDTree
+except ImportError:  # scipy is optional unless k-nearest neighbors are requested.
+    KDTree = None
+
+from core import shapefile
 
 # Define function for Queen's and Rook's contiguity neighbors
 def getNeighborsAreaContiguity(AREAS):
@@ -75,6 +79,9 @@ def kNearestNeighbors(centroids, k):
     :return: Dictionary where keys are unit indices and values are lists of neighbor indices.
     :rtype: dict
     """
+    if KDTree is None:
+        raise ImportError("scipy is required for kNearestNeighbors")
+
     tree = KDTree(centroids)
     neighbors = {}
 
@@ -106,3 +113,4 @@ def extractCentroidsFromShapefile(shapefile_path):
         centroids.append(centroid)
 
     return centroids
+
