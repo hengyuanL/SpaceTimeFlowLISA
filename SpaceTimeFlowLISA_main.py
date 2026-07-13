@@ -1,6 +1,6 @@
 import core.shapefile
 import pandas as pd
-from core.FlowLISA import execSpaceTimeFLOWLISA
+from core.SpaceTimeFlowLISA import execSpaceTimeFLOWLISA
 
 # Import panel flow data from .txt files
 flowdf1 = pd.read_csv('input/US_state_migration_Opopweighted_2005_ReadytoUse.txt', sep=r'\s+')
@@ -48,6 +48,7 @@ outputStr = execSpaceTimeFLOWLISA(AREAS1, AREAS2, F_dt1, F_dt2, 2005, 2006, 1, 5
         494 -> lagged
         55 -> hybrid
     9. Allyeardic: Dictionary of all-year panel flow values
+
     Returns:
     - A formatted output string containing results
 """
