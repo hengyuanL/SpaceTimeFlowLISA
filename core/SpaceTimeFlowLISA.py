@@ -1,15 +1,15 @@
-﻿"""Space-Time FlowLISA implementation.
+"""Space-Time FlowLISA implementation.
 
 This module is the Python 3/core-format migration of the original
-``Code/Flow Space-Time LISA.py`` script from bobyellow/SpaceTimeFlowLISA.
-It keeps the Space-Time FlowLISA logic separate from the spatial-only
-FlowLISA wrapper and preserves Monte Carlo p-value/significance output.
+Space-Time FlowLISA implementation from bobyellow/SpaceTimeFlowLISA.
+It preserves the Space-Time FlowLISA workflow, including Monte Carlo
+p-value and significance output.
 """
 
 import numpy as np
 
-from core.getFlowNeighbors import STweightsFromFlows
-from core.spatstats import calculateGearyC, calculateGetisG, calculateMoranI, calculateMultiGearyC
+from core.SpaceTimeWeights import STweightsFromFlows
+from core.SpaceTimeStatistics import calculateGearyC, calculateGetisG, calculateMoranI, calculateMultiGearyC
 
 __all__ = ["execSpaceTimeFLOWLISA"]
 
@@ -110,7 +110,6 @@ def execSpaceTimeFLOWLISA(
     print("Running Space-Time FlowLISA by Ran Tao, Yuzhou Chen, and Jean-Claude Thill.")
 
     st_values = _build_space_time_values(FlowValue, FlowValue2, Time1, Time2)
-    current_keys = [(origin, destination, Time2) for origin, destination in FlowValue2.keys()]
     Wflow = STweightsFromFlows(AREAS1, AREAS2, FlowValue, FlowValue2, Time1, Time2, NeiLvl)
 
     source_values = _numeric_values(Allyeardic) if Allyeardic else _numeric_values(st_values)
@@ -199,4 +198,3 @@ def execSpaceTimeFLOWLISA(
         else:
             output.append("({}, {}, {}), {}".format(od_key[0], od_key[1], Time2, values))
     return "\n".join(output)
-
