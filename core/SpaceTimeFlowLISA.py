@@ -9,7 +9,7 @@ p-value and significance output.
 import numpy as np
 
 from core.SpaceTimeWeights import STweightsFromFlows
-from core.SpaceTimeStatistics import calculateGearyC, calculateGetisG, calculateMoranI, calculateMultiGearyC
+from core.spatstats import calculateGearyC, calculateGetisG, calculateMoranI, calculateMultiGearyC
 
 __all__ = ["execSpaceTimeFLOWLISA"]
 
