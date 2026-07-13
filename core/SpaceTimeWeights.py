@@ -1,10 +1,10 @@
-from core.SpaceTimeNeighbors import getSpaceTimeAreaContiguity
+from core.getNeighbors import getNeighborsAreaContiguity
 
 
 def _area_rook_neighbors(areas):
     if hasattr(areas, "Wrook"):
         return {k: list(v) for k, v in areas.Wrook.items()}
-    _, wrook = getSpaceTimeAreaContiguity(areas)
+    _, wrook = getNeighborsAreaContiguity(areas)
     return {k: list(v) for k, v in wrook.items()}
 
 
